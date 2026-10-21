@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cornerstone Stock & Library Ledger</title>
+<style>
+  :root{
+    --paper:#F6F1E4;
+    --paper-dim:#EFE8D6;
+    --ink:#20261F;
+    --ink-soft:#5B6155;
+    --rule:#D8CDAE;
+    --green:#33553E;
+    --green-deep:#233C2C;
+    --red:#8C3B2E;
+    --gold:#B5862B;
+    --white:#FFFDF8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height:1.4;
+  }
+  .app{max-width:1180px;margin:0 auto;padding:28px 22px 80px;}
+
+  /* Header */
+  .masthead{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:3px solid var(--ink);
+    padding-bottom:14px;
+    margin-bottom:22px;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .masthead h1{
+    font-size:2rem; margin:0; letter-spacing:0.3px; font-weight:700;
+  }
+  .masthead .sub{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    color:var(--ink-soft); font-size:0.8rem; margin-top:4px;
+  }
+  .masthead .date{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size:0.78rem; color:var(--ink-soft); text-align:right;
+  }
+
+  /* Stat strip */
+  .stats{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+    background:var(--ink); border:1px solid var(--ink);
+    margin-bottom:26px;
+  }
+  .stat{
+    background:var(--white); padding:14px 16px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .stat .num{font-size:1.5rem; font-weight:700; font-family:Georgia,serif; color:var(--green-deep);}
+  .stat .lbl{font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); margin-top:2px;}
+  .stat.warn .num{color:var(--red);}
+
+  /* Toolbar */
+  .toolbar{
+    display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .search-box{
+    flex:1 1 220px; display:flex; align-items:stretch; gap:0;
+  }
+  .search-box input[type=text]{
+    flex:1; padding:9px 12px; border:1px solid var(--rule); border-right:none;
+    background:var(--white); font-size:0.9rem; border-radius:2px 0 0 2px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .icon-search-btn{
+    display:flex; align-items:center; justify-content:center;
+    width:38px; flex-shrink:0;
+    background:#EAF2FB; border:1px solid var(--rule); border-left:1px solid #BFD6EC;
+    border-radius:0 2px 2px 0; cursor:pointer;
+  }
+  .icon-search-btn:hover{background:#DCEAF9;}
+  .icon-search-btn svg{width:16px; height:16px;}
+
+  select, input[type=text], input[type=number], input[type=date]{
+    padding:9px 10px; border:1px solid var(--rule); background:var(--white);
+    font-size:0.85rem; border-radius:2px; color:var(--ink);
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .btn{
+    border:1px solid var(--ink); background:var(--ink); color:var(--paper);
+    padding:9px 16px; font-size:0.85rem; cursor:pointer; border-radius:2px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    transition: transform .08s ease;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn.in{background:var(--green); border-color:var(--green);}
+  .btn.out{background:var(--red); border-color:var(--red);}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--rule);}
+
+  /* Table */
+  .ledger-wrap{border:1px solid var(--ink); background:var(--white);}
+  table{width:100%; border-collapse:collapse; font-size:0.86rem;}
+  thead th{
+    text-align:left; padding:9px 12px; background:var(--green-deep); color:var(--paper);
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;
+    position:sticky; top:0;
+  }
+  tbody td{padding:8px 12px; border-bottom:1px solid var(--paper-dim); vertical-align:middle;}
+  tbody tr:hover{background:var(--paper-dim);}
+  .code{font-family: 'Courier New', monospace; font-size:0.78rem; color:var(--ink-soft);}
+  .qty-low{color:var(--red); font-weight:700;}
+  .rowbtns{display:flex; gap:6px;}
+  .rowbtns button{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    border:none; cursor:pointer; padding:5px 9px; font-size:0.72rem; border-radius:2px; color:#fff;
+  }
+  .rowbtns .in{background:var(--green);}
+  .rowbtns .out{background:var(--red);}
+  .cat-tag{
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size:0.68rem; color:var(--ink-soft);
+  }
+  .empty-row td{padding:30px; text-align:center; color:var(--ink-soft); font-style:italic;}
+  .table-scroll{max-height:560px; overflow:auto;}
+
+  /* Modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(32,38,31,0.55);
+    display:none; align-items:center; justify-content:center; z-index:50;
+    padding:20px;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--paper); border:2px solid var(--ink); max-width:420px; width:100%;
+    padding:22px; border-radius:2px; position:relative;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .modal h2{font-family:Georgia,serif; margin:0 0 4px; font-size:1.25rem;}
+  .modal .item-name{color:var(--ink-soft); font-size:0.85rem; margin-bottom:16px;}
+  .modal label{display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin-bottom:5px; margin-top:12px;}
+  .modal input, .modal textarea{width:100%; padding:9px 10px; border:1px solid var(--rule); background:var(--white); font-size:0.9rem; border-radius:2px; font-family:inherit;}
+  .modal-actions{display:flex; gap:10px; margin-top:20px;}
+  .modal-actions .btn{flex:1; text-align:center;}
+  .close-x{position:absolute; top:14px; right:16px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--ink-soft);}
+  .modal-err{color:var(--red); font-size:0.78rem; margin-top:8px; display:none;}
+
+  /* Tabs */
+  .tabs{display:flex; gap:2px; margin-bottom:18px; flex-wrap:wrap; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .tab{
+    padding:9px 18px; background:var(--paper-dim); border:1px solid var(--rule); cursor:pointer;
+    font-size:0.85rem; color:var(--ink-soft); border-bottom:none;
+  }
+  .tab.active{background:var(--white); color:var(--ink); font-weight:700; border-color:var(--ink);}
+
+  .section{display:none;}
+  .section.active{display:block;}
+
+  /* History */
+  .hist-item{
+    display:flex; justify-content:space-between; gap:14px; padding:12px 14px;
+    border-bottom:1px solid var(--paper-dim); background:var(--white);
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size:0.85rem;
+  }
+  .hist-item:last-child{border-bottom:none;}
+  .hist-badge{
+    font-size:0.68rem; padding:3px 8px; border-radius:10px; color:#fff; text-transform:uppercase;
+    letter-spacing:0.04em; height:fit-content;
+  }
+  .hist-badge.in{background:var(--green);}
+  .hist-badge.out{background:var(--red);}
+  .hist-meta{color:var(--ink-soft); font-size:0.75rem; margin-top:2px;}
+  .hist-right{text-align:right; white-space:nowrap; color:var(--ink-soft); font-size:0.78rem;}
+
+  .footer-note{
+    margin-top:26px; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size:0.75rem; color:var(--ink-soft); text-align:center;
+  }
+
+  /* Store Issue */
+  .si-card{background:var(--white); border:1px solid var(--ink); padding:16px 18px; margin-bottom:16px;}
+  .si-header{display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;}
+  .si-field{display:flex; flex-direction:column; gap:4px;}
+  .si-field label{color:var(--ink-soft); font-size:0.68rem; text-transform:uppercase; letter-spacing:.05em; font-weight:600;}
+  .si-field input, .si-field select{padding:7px 9px; border:1px solid var(--rule); border-radius:2px; font-size:0.85rem; min-width:170px; background:var(--white); font-family:inherit;}
+  .si-field input[readonly]{background:var(--paper-dim); color:var(--ink-soft);}
+  .si-status{font-weight:700; font-size:0.85rem; padding:6px 4px;}
+  .si-status.pending{color:var(--red);}
+  .si-status.saved{color:var(--green);}
+  .si-status.forwarded{color:var(--gold);}
+  .action-icons{display:flex; gap:26px; flex-wrap:wrap; border-top:1px solid var(--paper-dim); padding-top:14px;}
+  .action-icon-btn{
+    display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;
+    background:none; border:none; font-size:0.68rem; color:var(--ink-soft);
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .action-icon-btn:hover{color:var(--ink);}
+  .action-icon-btn .ico{font-size:1.35rem; line-height:1;}
+  .si-table-wrap{overflow-x:auto;}
+  table.si-table{min-width:1250px;}
+  .si-table td{padding:4px 5px;}
+  .si-table input{
+    width:100%; padding:6px 7px; border:1px solid var(--rule); border-radius:2px;
+    font-size:0.8rem; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  .si-table input[readonly]{background:var(--paper-dim); color:var(--ink-soft);}
+  .si-remove-btn{background:var(--red); color:#fff; border:none; border-radius:2px; padding:5px 9px; cursor:pointer; font-size:0.75rem;}
+  .si-addrow{margin-top:10px;}
+  .si-grand{
+    text-align:right; margin-top:12px; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size:0.95rem; color:var(--ink);
+  }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--paper); padding:11px 20px; border-radius:3px;
+    font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size:0.85rem;
+    opacity:0; transition:all .25s ease; z-index:100; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media print{
+    body{background:#fff;}
+    .toolbar, .tabs, .rowbtns, .footer-note, .overlay, .toast, th:last-child, td:last-child, .action-icons, #siListPanel, .noprint{display:none !important;}
+    .app{max-width:100%; padding:0;}
+    .ledger-wrap{border:none;}
+    .table-scroll{max-height:none; overflow:visible;}
+    thead th{position:static; background:#eee !important; color:#000 !important;}
+    .stats{border-color:#000;}
+    .stat{background:#fff;}
+    tbody tr:hover{background:none;}
+    .masthead{border-bottom:2px solid #000;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="masthead">
+    <div>
+      <h1>Cornerstone Stock Ledger</h1>
+      <div class="sub">Global Campus &middot; General &amp; Stationery Store + Fixed Assets Purchase Store</div>
+    </div>
+    <div class="date" id="todayDate"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="num" id="statItems">0</div><div class="lbl">Items tracked</div></div>
+    <div class="stat"><div class="num" id="statUnits">0</div><div class="lbl">Total units on hand</div></div>
+    <div class="stat"><div class="num" id="statValue">Rs. 0</div><div class="lbl">Closing stock value</div></div>
+    <div class="stat warn"><div class="num" id="statLow">0</div><div class="lbl">Low stock (&le; 5 units)</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-section="ledger">Stock Ledger</div>
+    <div class="tab" data-section="issue">Store Issue</div>
+    <div class="tab" data-section="history">Transaction History</div>
+  </div>
+
+  <div class="section active" id="section-ledger">
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="search" placeholder="Search by item name or code&hellip;">
+        <button class="icon-search-btn" id="searchBtn" title="Search" type="button">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10.5" cy="10.5" r="6.5" stroke="#2E6DA4" stroke-width="2"/><line x1="15.4" y1="15.4" x2="21" y2="21" stroke="#2E6DA4" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <select id="storeFilter"><option value="">All stores</option></select>
+      <select id="catFilter"><option value="">All categories</option></select>
+      <button class="btn" id="addItemBtn">+ Add Item</button>
+      <button class="btn ghost" id="printBtn">Print</button>
+      <button class="btn ghost" id="resetBtn" title="Restore original balances">Reset to report</button>
+    </div>
+
+    <div class="ledger-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th><th>Item</th><th>Category</th><th>Unit</th><th>Balance</th><th>Avg Rate</th><th>Value</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="section-issue">
+    <div class="si-card">
+      <div class="si-header">
+        <div class="si-field"><label>Department</label><input type="text" id="siDept" value="Global Campus"></div>
+        <div class="si-field"><label>Store</label><select id="siStore"></select></div>
+        <div class="si-field"><label>SI Date</label><input type="date" id="siDate"></div>
+        <div class="si-field"><label>SI No</label><input type="text" id="siNo" readonly></div>
+        <div class="si-status pending" id="siStatus">Pending</div>
+      </div>
+      <div class="action-icons">
+        <button class="action-icon-btn" id="siRefresh" type="button"><span class="ico">🔄</span>Refresh</button>
+        <button class="action-icon-btn" id="siSave" type="button"><span class="ico">💾</span>Save</button>
+        <button class="action-icon-btn" id="siList" type="button"><span class="ico">📋</span>List</button>
+        <button class="action-icon-btn" id="siForward" type="button"><span class="ico">➡️</span>Forward to Store</button>
+        <button class="action-icon-btn" id="siPrint" type="button"><span class="ico">🖨️</span>Print</button>
+        <button class="action-icon-btn" id="siCancel" type="button"><span class="ico">❌</span>Cancel</button>
+      </div>
+    </div>
+
+    <div class="ledger-wrap si-table-wrap">
+      <div class="table-scroll">
+        <table class="si-table">
+          <thead>
+            <tr>
+              <th>Code</th><th>Description</th><th>Unit</th><th>Avai. Qty</th><th>Iss. Qty</th>
+              <th>Iss. Rate</th><th>Total</th><th>Purpose</th><th>Cost ID</th><th>Cost Desc.</th><th>All. ID</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="siBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <button class="btn ghost si-addrow" id="siAddRow" type="button">+ Add Row</button>
+    <div class="si-grand">Grand Total: <strong id="siGrandTotal">Rs. 0</strong></div>
+
+    <div id="siListPanel" style="display:none; margin-top:24px;">
+      <h3 style="font-family:Georgia,serif;">Saved Store Issues</h3>
+      <div class="ledger-wrap" id="siListBody"></div>
+    </div>
+    <datalist id="itemCodeList"></datalist>
+  </div>
+
+  <div class="section" id="section-history">
+    <div id="historyList"></div>
+  </div>
+
+  <div class="footer-note">Balances shown reflect opening stock report plus transactions recorded. Data is saved automatically.</div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="close-x" id="closeModal">&times;</button>
+    <h2 id="modalTitle">Stock In</h2>
+    <div class="item-name" id="modalItemName"></div>
+    <label>Quantity</label>
+    <input type="number" id="modalQty" min="0.01" step="0.01" placeholder="e.g. 10">
+    <label>Reason / Reference (optional)</label>
+    <input type="text" id="modalReason" placeholder="e.g. Purchase from ABC">
+    <div class="modal-err" id="modalErr">Enter a valid quantity.</div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelModal">Cancel</button>
+      <button class="btn" id="confirmModal">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="overlay" id="addOverlay">
+  <div class="modal">
+    <button class="close-x" id="closeAddModal">&times;</button>
+    <h2>Add New Item</h2>
+    <div class="item-name">Create a new stock ledger entry.</div>
+    <label>Item name</label>
+    <input type="text" id="newName" placeholder="e.g. Whiteboard Marker">
+    <label>Item code</label>
+    <div class="search-box" style="margin-bottom:0;">
+      <input type="text" id="newCode" placeholder="e.g. 0999001">
+      <button class="icon-search-btn" id="lookupCodeBtn" title="Look up code" type="button">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10.5" cy="10.5" r="6.5" stroke="#2E6DA4" stroke-width="2"/><line x1="15.4" y1="15.4" x2="21" y2="21" stroke="#2E6DA4" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <label>Unit</label>
+    <input type="text" id="newUnit" placeholder="e.g. NO, PKT, SET">
+    <label>Category</label>
+    <input type="text" id="newCategory" placeholder="Category" list="catList">
+    <datalist id="catList"></datalist>
+    <label>Store</label>
+    <input type="text" id="newStore" placeholder="Store name" list="storeList">
+    <datalist id="storeList"></datalist>
+    <label>Opening quantity</label>
+    <input type="number" id="newQty" min="0" step="0.01" placeholder="20">
+    <label>Average rate</label>
+    <input type="number" id="newRate" min="0" step="0.01" placeholder="45.00">
+    <div class="modal-err" id="addErr">Fill in all required fields.</div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelAddModal">Cancel</button>
+      <button class="btn in" id="confirmAddModal">Add Item</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ITEMS = [{"code":"0101002","name":"Chart Paper (White)","unit":"NO","category":"Stationery Items - Stationery Items","store":"Fixed Assets Purchase Store","qty":10.0,"rate":45.0,"value":450.0,"id":1},{"code":"01010028","name":"Sticko","unit":"NO","category":"Stationery Items - Stationery Items","store":"Fixed Assets Purchase Store","qty":7.0,"rate":580.0,"value":4060.0,"id":2}];
+
+let state = { items: null, tx: [], issues: [], siCounter: 1 };
+let modalMode = null, modalItemId = null, siRows = [];
+
+function fmtNum(n, decimals){
+  decimals = decimals === undefined ? 2 : decimals;
+  let v = Number(n);
+  if(Object.is(v, -0)) v = 0;
+  return v.toLocaleString('en-US', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+}
+function fmtMoney(n){ return 'Rs. ' + Math.round(n).toLocaleString('en-US'); }
+
+function loadState(){
+  try{
+    const items = localStorage.getItem('cornerstone_ledger_items_v1');
+    const tx = localStorage.getItem('cornerstone_ledger_tx_v1');
+    const issues = localStorage.getItem('cornerstone_ledger_issues_v1');
+    const siCounter = localStorage.getItem('cornerstone_ledger_sicounter_v1');
+    state.items = items ? JSON.parse(items) : JSON.parse(JSON.stringify(ITEMS));
+    state.tx = tx ? JSON.parse(tx) : [];
+    state.issues = issues ? JSON.parse(issues) : [];
+    state.siCounter = siCounter ? JSON.parse(siCounter) : 1;
+  }catch(e){
+    state.items = JSON.parse(JSON.stringify(ITEMS));
+  }
+}
+
+function saveState(){
+  try{
+    localStorage.setItem('cornerstone_ledger_items_v1', JSON.stringify(state.items));
+    localStorage.setItem('cornerstone_ledger_tx_v1', JSON.stringify(state.tx));
+    localStorage.setItem('cornerstone_ledger_issues_v1', JSON.stringify(state.issues));
+    localStorage.setItem('cornerstone_ledger_sicounter_v1', JSON.stringify(state.siCounter));
+  }catch(e){ console.error('Save failed', e); }
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=> t.classList.remove('show'), 2400);
+}
+
+function populateFilters(){
+  const stores = [...new Set(state.items.map(i=>i.store))].sort();
+  const cats = [...new Set(state.items.map(i=>i.category))].sort();
+  document.getElementById('storeFilter').innerHTML = '<option value="">All stores</option>' + stores.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  document.getElementById('catFilter').innerHTML = '<option value="">All categories</option>' + cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(shortCat(c))}</option>`).join('');
+
+  document.getElementById('catList').innerHTML = cats.map(c=>`<option value="${escapeHtml(c)}">`).join('');
+  document.getElementById('storeList').innerHTML = stores.map(s=>`<option value="${escapeHtml(s)}">`).join('');
+
+  const siStoreSel = document.getElementById('siStore');
+  const prevVal = siStoreSel.value;
+  siStoreSel.innerHTML = stores.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  if(stores.includes(prevVal)) siStoreSel.value = prevVal;
+
+  document.getElementById('itemCodeList').innerHTML = state.items.map(i=>`<option value="${escapeHtml(i.code)}">${escapeHtml(i.name)}</option>`).join('');
+}
+
+function shortCat(c){ const parts = c.split(' - '); return parts.length>1 ? parts[1] : c; }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function renderStats(){
+  document.getElementById('statItems').textContent = state.items.length;
+  document.getElementById('statUnits').textContent = fmtNum(state.items.reduce((a,i)=>a+i.qty,0), 0);
+  document.getElementById('statValue').textContent = fmtMoney(state.items.reduce((a,i)=>a+i.qty*i.rate,0));
+  document.getElementById('statLow').textContent = state.items.filter(i=>i.qty<=5).length;
+}
+
+function renderLedger(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const storeF = document.getElementById('storeFilter').value;
+  const catF = document.getElementById('catFilter').value;
+  const body = document.getElementById('ledgerBody');
+
+  let rows = state.items.filter(i=>{
+    if(storeF && i.store !== storeF) return false;
+    if(catF && i.category !== catF) return false;
+    if(q && !(i.name.toLowerCase().includes(q) || i.code.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  rows.sort((a,b)=> a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+
+  if(rows.length === 0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="8">No items match this search.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map(i=>{
+    const val = i.qty * i.rate;
+    const qtyClass = i.qty <= 5 ? 'qty-low' : '';
+    return `<tr>
+      <td data-label="Code"><span class="code">${escapeHtml(i.code)}</span></td>
+      <td data-label="Item">${escapeHtml(i.name)}</td>
+      <td data-label="Category"><span class="cat-tag">${escapeHtml(shortCat(i.category))}</span></td>
+      <td data-label="Unit">${escapeHtml(i.unit)}</td>
+      <td data-label="Balance" class="${qtyClass}">${fmtNum(i.qty)}</td>
+      <td data-label="Avg Rate">${fmtNum(i.rate)}</td>
+      <td data-label="Value">${fmtMoney(val)}</td>
+      <td data-label="Actions">
+        <div class="rowbtns">
+          <button class="in" data-act="in" data-id="${i.id}">Stock In</button>
+          <button class="out" data-act="out" data-id="${i.id}">Stock Out</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderHistory(){
+  const list = document.getElementById('historyList');
+  if(state.tx.length === 0){
+    list.innerHTML = '<div class="hist-item" style="justify-content:center; color:var(--ink-soft); font-style:italic;">No stock movements recorded yet.</div>';
+    return;
+  }
+  list.innerHTML = [...state.tx].reverse().map(t=>{
+    const item = state.items.find(i=>i.id === t.itemId);
+    const name = item ? item.name : t.itemName;
+    return `<div class="hist-item">
+      <div>
+        <span class="hist-badge ${t.type}">${t.type === 'in' ? 'Stock In' : 'Stock Out'}</span>
+        <div style="margin-top:6px; font-weight:600;">${escapeHtml(name)}</div>
+        <div class="hist-meta">${escapeHtml(t.reason || 'No reference given')}</div>
+      </div>
+      <div class="hist-right">
+        <div style="font-weight:700; color:${t.type==='in' ? 'var(--green)' : 'var(--red)'}">${t.type==='in'?'+':'-'}${fmtNum(t.qty)}</div>
+        <div>${new Date(t.at).toLocaleString()}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){
+  renderStats();
+  renderLedger();
+  renderHistory();
+}
+
+function openModal(mode, itemId){
+  modalMode = mode; modalItemId = itemId;
+  const item = state.items.find(i=>i.id === itemId);
+  document.getElementById('modalTitle').textContent = mode === 'in' ? 'Stock In' : 'Stock Out';
+  document.getElementById('modalItemName').textContent = `${item.name} (${item.code}) — Balance: ${fmtNum(item.qty)} ${item.unit}`;
+  document.getElementById('modalQty').value = '';
+  document.getElementById('modalReason').value = '';
+  document.getElementById('modalErr').style.display = 'none';
+  document.getElementById('confirmModal').className = mode === 'in' ? 'btn in' : 'btn out';
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('modalQty').focus();
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); modalMode = null; modalItemId = null; }
+
+function confirmModalAction(){
+  const qty = parseFloat(document.getElementById('modalQty').value);
+  const err = document.getElementById('modalErr');
+  const item = state.items.find(i=>i.id === modalItemId);
+
+  if(!qty || qty <= 0 || isNaN(qty)){
+    err.textContent = 'Enter a valid quantity greater than 0.';
+    err.style.display = 'block';
+    return;
+  }
+  if(modalMode === 'out' && qty > item.qty){
+    err.textContent = `Cannot issue more than available balance (${fmtNum(item.qty)}).`;
+    err.style.display = 'block';
+    return;
+  }
+
+  if(modalMode === 'in') item.qty += qty;
+  else item.qty -= qty;
+
+  state.tx.push({
+    itemId: item.id, itemName: item.name, type: modalMode, qty: qty,
+    reason: document.getElementById('modalReason').value.trim(), at: Date.now()
+  });
+
+  saveState();
+  closeModal();
+  renderAll();
+  showToast(`${modalMode === 'in' ? 'Received' : 'Issued'} ${fmtNum(qty)} ${item.unit}`);
+}
+
+function resetToReport(){
+  if(!confirm('Restore original report balances?')) return;
+  state.items = JSON.parse(JSON.stringify(ITEMS));
+  state.tx = [];
+  saveState();
+  renderAll();
+  showToast('Ledger restored.');
+}
+
+function openAddModal(){
+  document.getElementById('newName').value = '';
+  document.getElementById('newCode').value = '';
+  document.getElementById('newUnit').value = '';
+  document.getElementById('newCategory').value = '';
+  document.getElementById('newStore').value = '';
+  document.getElementById('newQty').value = '';
+  document.getElementById('newRate').value = '';
+  document.getElementById('addErr').style.display = 'none';
+  document.getElementById('addOverlay').classList.add('open');
+}
+function closeAddModal(){ document.getElementById('addOverlay').classList.remove('open'); }
+
+function confirmAddItem(){
+  const name = document.getElementById('newName').value.trim();
+  const code = document.getElementById('newCode').value.trim();
+  const unit = document.getElementById('newUnit').value.trim();
+  const category = document.getElementById('newCategory').value.trim() || 'Uncategorized';
+  const store = document.getElementById('newStore').value.trim() || 'General and Stationery Store';
+  const qty = parseFloat(document.getElementById('newQty').value);
+  const rate = parseFloat(document.getElementById('newRate').value) || 0;
+  const err = document.getElementById('addErr');
+
+  if(!name || !code || !unit || isNaN(qty) || qty < 0){
+    err.textContent = 'Fill in all required fields.';
+    err.style.display = 'block';
+    return;
+  }
+  if(state.items.some(i => i.code.toLowerCase() === code.toLowerCase())){
+    err.textContent = 'Item code already exists.';
+    err.style.display = 'block';
+    return;
+  }
+
+  const newId = state.items.reduce((max,i)=>Math.max(max,i.id),0) + 1;
+  state.items.push({ id:newId, code, name, unit, category, store, qty, rate, value: qty*rate });
+  state.tx.push({ itemId: newId, itemName: name, type:'in', qty:qty, reason: 'New item added', at: Date.now() });
+
+  saveState();
+  populateFilters();
+  closeAddModal();
+  renderAll();
+  showToast(`Added: ${name}`);
+}
+
+/* Store Issue */
+function todayISO(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function generateSiNo(){
+  const d = new Date();
+  return `SI${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}${String(state.siCounter).padStart(4,'0')}`;
+}
+function newBlankSiRow(){ return { code:'', name:'', unit:'', avail:0, issQty:0, issRate:0, total:0, purpose:'', costId:'', costDesc:'', allId:'' }; }
+function setSiStatus(s){
+  const el = document.getElementById('siStatus');
+  el.className = 'si-status ' + s;
+  el.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+}
+function resetSiForm(genNewNumber){
+  siRows = [newBlankSiRow()];
+  document.getElementById('siDate').value = todayISO();
+  if(genNewNumber) document.getElementById('siNo').value = generateSiNo();
+  setSiStatus('pending');
+  renderSiRows();
+}
+function updateSiGrandTotal(){
+  document.getElementById('siGrandTotal').textContent = fmtMoney(siRows.reduce((a,r)=>a + (r.total||0), 0));
+}
+function renderSiRows(){
+  document.getElementById('siBody').innerHTML = siRows.map((r, idx)=>`
+    <tr data-idx="${idx}">
+      <td><input type="text" class="si-code" list="itemCodeList" value="${escapeHtml(r.code)}" placeholder="Code"></td>
+      <td><input type="text" class="si-desc" value="${escapeHtml(r.name)}" readonly></td>
+      <td><input type="text" class="si-unit" value="${escapeHtml(r.unit)}" readonly></td>
+      <td><input type="text" class="si-avail" value="${fmtNum(r.avail)}" readonly></td>
+      <td><input type="number" class="si-issqty" min="0" step="0.01" value="${r.issQty || ''}"></td>
+      <td><input type="number" class="si-issrate" min="0" step="0.0001" value="${r.issRate || ''}"></td>
+      <td><input type="text" class="si-total" value="${fmtNum(r.total)}" readonly></td>
+      <td><input type="text" class="si-purpose" value="${escapeHtml(r.purpose)}" placeholder="Purpose"></td>
+      <td><input type="text" class="si-costid" value="${escapeHtml(r.costId)}"></td>
+      <td><input type="text" class="si-costdesc" value="${escapeHtml(r.costDesc)}"></td>
+      <td><input type="text" class="si-allid" value="${escapeHtml(r.allId)}"></td>
+      <td>${siRows.length > 1 ? `<button type="button" class="si-remove-btn" data-idx="${idx}">&times;</button>` : ''}</td>
+    </tr>
+  `).join('');
+  updateSiGrandTotal();
+}
+
+function saveSi(){
+  const validRows = siRows.filter(r => r.code && r.issQty > 0);
+  if(validRows.length === 0){ showToast('Add valid items.'); return; }
+  for(const r of validRows){
+    const item = state.items.find(i => i.code.toLowerCase() === r.code.toLowerCase());
+    if(!item || r.issQty > item.qty){ showToast(`Invalid quantity for ${r.code}`); return; }
+  }
+  const siNo = document.getElementById('siNo').value;
+  let grand = 0;
+  for(const r of validRows){
+    const item = state.items.find(i => i.code.toLowerCase() === r.code.toLowerCase());
+    item.qty -= r.issQty;
+    grand += r.issQty * r.issRate;
+    state.tx.push({ itemId: item.id, itemName: item.name, type: 'out', qty: r.issQty, reason: `Store Issue ${siNo}`, at: Date.now() });
+  }
+  state.issues.push({ siNo, date: document.getElementById('siDate').value, dept: document.getElementById('siDept').value, store: document.getElementById('siStore').value, rows: validRows, total: grand, status: 'Saved', savedAt: Date.now() });
+  state.siCounter++;
+  saveState();
+  setSiStatus('saved');
+  renderAll();
+  renderSiList();
+  showToast(`Store Issue ${siNo} saved.`);
+}
+
+function printSi(){
+  const validRows = siRows.filter(r => r.code && r.issQty > 0);
+  if(validRows.length === 0){ showToast('Add items before printing.'); return; }
+  printVoucherWindow({ siNo: document.getElementById('siNo').value, date: document.getElementById('siDate').value, dept: document.getElementById('siDept').value, store: document.getElementById('siStore').value, status: document.getElementById('siStatus').textContent, rows: validRows });
+}
+
+function printVoucherWindow(v){
+  const w = window.open('', '_blank');
+  if(!w){ showToast('Allow pop-ups to print.'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>Voucher ${v.siNo}</title><style>body{font-family:Georgia,serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-top:10px;}th,td{border:1px solid #999;padding:6px;font-size:12px;}th{background:#233C2C;color:#fff;}</style></head><body>
+    <h2>Cornerstone School - Store Issue Voucher</h2>
+    <p><strong>SI No:</strong> ${v.siNo} | <strong>Date:</strong> ${v.date} | <strong>Store:</strong> ${v.store}</p>
+    <table><thead><tr><th>#</th><th>Code</th><th>Description</th><th>Unit</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
+    <tbody>${v.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.code}</td><td>${r.name}</td><td>${r.unit}</td><td>${r.issQty}</td><td>${r.issRate}</td><td>${r.issQty*r.issRate}</td></tr>`).join('')}</tbody></table>
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 300);
+}
+
+function renderSiList(){
+  document.getElementById('siListBody').innerHTML = state.issues.length === 0 ? '<div style="padding:10px;">No saved issues.</div>' : [...state.issues].reverse().map(d=>`
+    <div class="hist-item">
+      <div><strong>${d.siNo}</strong> (${d.store})<div class="hist-meta">${d.rows.length} items &middot; ${d.date}</div></div>
+      <div class="hist-right"><div>${fmtMoney(d.total)}</div><button type="button" class="btn ghost" onclick="printVoucherWindow(${JSON.stringify(d).replace(/"/g, '&quot;')})" style="padding:2px 8px;font-size:11px;">Print</button></div>
+    </div>`).join('');
+}
+
+function setupEvents(){
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('section-' + tab.dataset.section).classList.add('active');
+    });
+  });
+
+  document.getElementById('search').addEventListener('input', renderLedger);
+  document.getElementById('storeFilter').addEventListener('change', renderLedger);
+  document.getElementById('catFilter').addEventListener('change', renderLedger);
+  document.getElementById('resetBtn').addEventListener('click', resetToReport);
+  document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+
+  document.getElementById('addItemBtn').addEventListener('click', openAddModal);
+  document.getElementById('closeAddModal').addEventListener('click', closeAddModal);
+  document.getElementById('cancelAddModal').addEventListener('click', closeAddModal);
+  document.getElementById('confirmAddModal').addEventListener('click', confirmAddItem);
+
+  document.getElementById('siBody').addEventListener('change', (e)=>{
+    if(!e.target.classList.contains('si-code')) return;
+    const tr = e.target.closest('tr');
+    const row = siRows[parseInt(tr.dataset.idx, 10)];
+    const item = state.items.find(i => i.code.toLowerCase() === e.target.value.trim().toLowerCase());
+    if(item){
+      row.code = item.code; row.name = item.name; row.unit = item.unit; row.avail = item.qty; row.issRate = item.rate;
+      if(parseInt(tr.dataset.idx) === siRows.length - 1) siRows.push(newBlankSiRow());
+    }
+    renderSiRows();
+  });
+
+  document.getElementById('siBody').addEventListener('input', (e)=>{
+    const tr = e.target.closest('tr'); if(!tr) return;
+    const row = siRows[parseInt(tr.dataset.idx, 10)];
+    if(e.target.classList.contains('si-issqty')) row.issQty = parseFloat(e.target.value) || 0;
+    if(e.target.classList.contains('si-issrate')) row.issRate = parseFloat(e.target.value) || 0;
+    row.total = (row.issQty||0) * (row.issRate||0);
+    renderSiRows();
+  });
+
+  document.getElementById('siAddRow').addEventListener('click', ()=>{ siRows.push(newBlankSiRow()); renderSiRows(); });
+  document.getElementById('siSave').addEventListener('click', saveSi);
+  document.getElementById('siPrint').addEventListener('click', printSi);
+  document.getElementById('siRefresh').addEventListener('click', ()=>resetSiForm(true));
+  document.getElementById('siCancel').addEventListener('click', ()=>resetSiForm(true));
+  document.getElementById('siList').addEventListener('click', ()=>{
+    const p = document.getElementById('siListPanel');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('ledgerBody').addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-act]');
+    if(btn) openModal(btn.dataset.act, parseInt(btn.dataset.id, 10));
+  });
+
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('cancelModal').addEventListener('click', closeModal);
+  document.getElementById('confirmModal').addEventListener('click', confirmModalAction);
+}
+
+function init(){
+  document.getElementById('todayDate').textContent = 'Reporting date: ' + new Date().toLocaleDateString();
+  loadState();
+  populateFilters();
+  setupEvents();
+  resetSiForm(true);
+  renderSiList();
+  renderAll();
+}
+
+init();
+</script>
+</body>
+</html>
